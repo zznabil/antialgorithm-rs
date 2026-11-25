@@ -21,12 +21,24 @@ struct Raster {
     pixmap: tiny_skia::Pixmap,
 }
 
-fn options() -> usvg::Options<'static> {
+fn options() -> Result<usvg::Options<'static>, String> {
     let mut db = usvg::fontdb::Database::new();
     db.load_system_fonts();
+    let first = db.faces().find_map(|f| f.families.first().map(|(n, _)| n.clone())).ok_or("no system fonts found, so text cannot be measured; install any font")?;
+    for known in ["Arial", "DejaVu Sans", "Liberation Sans", "Noto Sans"] {
+        if db.faces().any(|f| f.families.iter().any(|(n, _)| n == known)) {
+            db.set_sans_serif_family(known);
+            break;
+        }
+    }
+    if !db.faces().any(|f| f.families.iter().any(|(n, _)| n == "Arial" || n == "Times New Roman")) {
+        db.set_serif_family(first.clone());
+        db.set_monospace_family(first.clone());
+        db.set_sans_serif_family(first);
+    }
     let mut o = usvg::Options::default();
     o.fontdb = Arc::new(db);
-    o
+    Ok(o)
 }
 
 fn render(svg: &str, width: u32, opt: &usvg::Options) -> Result<Raster, String> {
@@ -196,7 +208,7 @@ pub fn run(path: &str, o: &Opts) -> Result<bool, String> {
     let name = std::path::Path::new(path).file_stem().map_or("svg".into(), |s| s.to_string_lossy().to_string());
     let out = o.out.clone().map(std::path::PathBuf::from).unwrap_or_else(|| std::env::temp_dir().join("antialgorithm_check").join(&name));
     std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-    let opt = options();
+    let opt = options()?;
     let full_r = render(&src, o.width, &opt)?;
     let small_r = render(&src, o.small, &opt)?;
     let (full_png, small_png) = (out.join("full.png"), out.join("small.png"));
