@@ -1,0 +1,25 @@
+[package]
+name = "antialgorithm"
+version = "0.1.0"
+edition = "2021"
+description = "Seed, move log, SVG roughening and SVG text checks for the antialgorithm skill (Rust port)"
+repository = "https://github.com/zznabil/antialgorithm-rs"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+rand = "0.8"
+clap = { version = "4", features = ["derive"] }
+xmltree = { version = "0.11", features = ["attribute-order"] }
+regex = "1"
+resvg = "0.45"
+fs2 = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+
+[dev-dependencies]
+serde_json = "1"
